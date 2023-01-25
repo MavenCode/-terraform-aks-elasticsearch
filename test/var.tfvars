@@ -1,32 +1,18 @@
-virtual_network_name = "es_vm_network"
-
 resource_group_location = "canadacentral"
 
 resource_group_name = "BMA-nlp-infra"
 
-subnet_name = "es_vm_subnet"
-
-publics_ip_name = "es_vm_ip"
-
-domain_name_label = "docai-es"
-
 environment = "dev"
 
-network_interface_name = "es_vm_interface"
+# storage_account_name = "docaivmstorage"
 
-storage_account_name = "docaivmstorage"
+# storage_container_name = "es-vm-container"
 
-storage_container_name = "es-vm-container"
+# computer_name = "docai-es-vm"
 
-vm_name = "es-vm"
+# admin_username = "docai_vm_user"
 
-disk_name = "es_vm_disk"
-
-computer_name = "docai-es-vm"
-
-admin_username = "docai_vm_user"
-
-admin_password = "Docai#234pass"
+# admin_password = "Docai#234pass"
 
 azure_subscription_id = "88f8e67a-c798-4b94-b332-XXXXX"
 

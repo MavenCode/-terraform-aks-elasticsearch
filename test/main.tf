@@ -1,6 +1,6 @@
 # create virtual network
 resource "azurerm_virtual_network" "vnet" {
-    name                = var.virtual_network_name
+    name                = "${var.name}-virtual-network"
     address_space       = ["10.0.0.0/16"]
     location            = var.resource_group_location
     resource_group_name = var.resource_group_name
@@ -8,7 +8,7 @@ resource "azurerm_virtual_network" "vnet" {
 
 # create subnet
 resource "azurerm_subnet" "subnet" {
-    name                    = var.subnet_name
+    name                    = "${var.name}-subnet"
     resource_group_name     = var.resource_group_name
     virtual_network_name    = "${azurerm_virtual_network.vnet.name}"
     address_prefixes        = ["10.0.2.0/24"]
@@ -16,11 +16,11 @@ resource "azurerm_subnet" "subnet" {
 
 # create public IPs
 resource "azurerm_public_ip" "ip" {
-    name = var.publics_ip_name
+    name = "${var.name}-public-ip"
     location = var.resource_group_location
     resource_group_name = var.resource_group_name
     allocation_method = "Static"
-    domain_name_label = var.domain_name_label
+    domain_name_label = "${var.name}-label"
 
     tags = {
         environment = var.environment
@@ -32,43 +32,19 @@ data "azurerm_public_ip" "ip" {
     resource_group_name = var.resource_group_name
 }
 
-
 # create network interface
 resource "azurerm_network_interface" "network" {
-    name = var.network_interface_name
+    name = "${var.name}-network-interface"
     location = var.resource_group_location
     resource_group_name = var.resource_group_name
 
     ip_configuration {
-        name = "ipconfiguration"
+        name = "${var.name}-ip-configuration"
         subnet_id = "${azurerm_subnet.subnet.id}"
         private_ip_address_allocation = "Static"
         private_ip_address = "10.0.2.5"
         public_ip_address_id = "${azurerm_public_ip.ip.id}"
     }
-}
-
-
-# create storage account
-resource "azurerm_storage_account" "storage" {
-    name = var.storage_account_name
-    resource_group_name = var.resource_group_name
-    location = var.resource_group_location
-    account_tier = "Standard"
-    account_replication_type = "LRS"
-
-    tags = {
-        environment = var.environment
-    }
-}
-
-
-# create storage container
-resource "azurerm_storage_container" "storage" {
-    name = var.storage_container_name
-    storage_account_name = "${azurerm_storage_account.storage.name}"
-    container_access_type = "private"
-    depends_on = [azurerm_storage_account.storage]
 }
 
 # create private key
@@ -77,9 +53,9 @@ resource "tls_private_key" "docai_ssh" {
     rsa_bits = 4096
 }
 
-# create security group
+# create security group and inbound rules
 resource "azurerm_network_security_group" "docai_sg" {
-  name                = var.security_group_name
+  name                = "${var.name}-security-group"
   location            = var.resource_group_location
   resource_group_name = var.resource_group_name
 
@@ -155,11 +131,11 @@ resource "azurerm_network_interface_security_group_association" "docai_net_assoc
 
 # create virtual machine
 resource "azurerm_virtual_machine" "elasticsearch_vm" {
-    name = var.vm_name
+    name = "${var.name}-vm"
     location = var.resource_group_location
     resource_group_name = var.resource_group_name
     network_interface_ids = ["${azurerm_network_interface.network.id}"]
-    vm_size = "Standard_E2s_v3"
+    vm_size = var.vm_size
 
     storage_image_reference {
         publisher = "Canonical"
@@ -169,16 +145,15 @@ resource "azurerm_virtual_machine" "elasticsearch_vm" {
     }
 
     storage_os_disk {
-        name = var.disk_name
+        name = "${var.name}-disk"
         caching = "ReadWrite"
-        managed_disk_type = "Standard_LRS"
+        managed_disk_type = var.disk_type
         create_option = "FromImage"
     }
 
     os_profile {
-        computer_name   = var.computer_name
-        admin_username  = var.admin_username
-        admin_password  = var.admin_password
+        computer_name   = var.name
+        admin_username  = var.name
     }
 
     os_profile_linux_config {
@@ -186,7 +161,7 @@ resource "azurerm_virtual_machine" "elasticsearch_vm" {
       
       ssh_keys {
         key_data = tls_private_key.docai_ssh.public_key_openssh
-        path = "/home/${var.admin_username}/.ssh/authorized_keys"
+        path = "/home/${var.name}/.ssh/authorized_keys"
     }
     }
 
@@ -194,8 +169,8 @@ resource "azurerm_virtual_machine" "elasticsearch_vm" {
     delete_data_disks_on_termination = true
 
     connection {
-        host = "${var.domain_name_label}.${var.resource_group_location}.cloudapp.azure.com"
-        user = var.admin_username
+        host = "${var.name}-label.${var.resource_group_location}.cloudapp.azure.com"
+        user = var.name
         type = "ssh"
         private_key = tls_private_key.docai_ssh.private_key_openssh
         timeout = "1m"
@@ -203,13 +178,11 @@ resource "azurerm_virtual_machine" "elasticsearch_vm" {
         }
 
     provisioner "file" {
-        // content     = templatefile("elasticsearch.yml", { host = data.azurerm_public_ip.ip.ip_address })
         source      = "elasticsearch.yml"
         destination = "/tmp/elasticsearch.yml"
     }
 
     provisioner "file" {
-        // content     = templatefile("kibana.yml", { host = data.azurerm_public_ip.ip.ip_address })
         source      = "kibana.yml"
         destination = "/tmp/kibana.yml"
     }
