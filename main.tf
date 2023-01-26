@@ -129,6 +129,21 @@ resource "azurerm_network_interface_security_group_association" "docai_net_assoc
   network_security_group_id = azurerm_network_security_group.docai_sg.id
 }
 
+resource "local_file" "elasticsearch_yaml" {
+  content  = templatefile("elasticsearch.yml.tpl", { es_cluster_name = var.es_cluster_name, 
+                                                     es_node_name = var.es_node_name, 
+                                                     es_network_host = var.es_network_host, 
+                                                     es_discovery_type = var.es_discovery_type })
+  filename = "elasticsearch.yaml"
+}
+
+resource "local_file" "kibana_yaml" {
+  content  = templatefile("kibana.yml.tpl", { kibana_host = var.kibana_host, 
+                                                     kibana_server_name = var.kibana_server_name, 
+                                                     kibana_es_hosts = var.kibana_es_hosts })
+  filename = "kibana.yaml"
+}
+
 # create virtual machine
 resource "azurerm_virtual_machine" "elasticsearch_vm" {
     name = "${var.name}-vm"
@@ -178,12 +193,12 @@ resource "azurerm_virtual_machine" "elasticsearch_vm" {
         }
 
     provisioner "file" {
-        source      = "elasticsearch.yml"
+        source      = local_file.elasticsearch_yaml.filename
         destination = "/tmp/elasticsearch.yml"
     }
 
     provisioner "file" {
-        source      = "kibana.yml"
+        source      = local_file.kibana_yaml.filename
         destination = "/tmp/kibana.yml"
     }
 

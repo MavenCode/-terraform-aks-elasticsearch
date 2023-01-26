@@ -14,13 +14,13 @@
 #
 # Use a descriptive name for your cluster:
 #
-cluster.name: docai-es-cluster
+cluster.name: ${es_cluster_name}
 #
 # ------------------------------------ Node ------------------------------------
 #
 # Use a descriptive name for the node:
 #
-node.name: docai-es-node
+node.name: ${es_node_name}
 #
 # Add custom attributes to the node:
 #
@@ -52,7 +52,7 @@ path.logs: /var/log/elasticsearch
 #
 # Set the bind address to a specific IP (IPv4 or IPv6):
 #
-network.host: 0.0.0.0
+network.host: ${es_network_host}
 #
 # Set a custom port for HTTP:
 #
@@ -65,7 +65,7 @@ network.host: 0.0.0.0
 # Pass an initial list of hosts to perform discovery when new node is started:
 # The default list of hosts is ["127.0.0.1", "[::1]"]
 #
-# discovery.zen.ping.unicast.hosts: ["${host}"]
+# discovery.zen.ping.unicast.hosts: ["{host}"]
 #
 # Prevent the "split brain" by configuring the majority of nodes (total number of master-eligible nodes / 2 + 1):
 #
@@ -87,4 +87,4 @@ network.host: 0.0.0.0
 #
 #action.destructive_requires_name: true
 
-discovery.type: single-node
+discovery.type: ${es_discovery_type}
